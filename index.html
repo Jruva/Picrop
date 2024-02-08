@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, height=device-height, initial-scale=1.0"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="upgrade-insecure-requests"
+    />
+    <title>PiCrop</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="icon.png" />
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <h1>Image Crop </h1>
+    <div id="btn-container">
+      <input type="file" id="imageInput" accept="image/jpeg" class="control1"/>
+      <button onclick="changeCropBoxSize(75)" class="control2">Increase Crop Box Size</button>
+      <button onclick="changeCropBoxSize(-75)" class="control2">Decrease Crop Box Size</button>
+      <button onclick="cropImage()" class="control1">Crop Image</button>
+    </div>
+    <div id="canvas-container">
+      <canvas id="imageCanvas"></canvas>
+      <div id="crop-box" onmousedown="startDragging(event)"></div>
+    </div>
+    <script>
+      const imageInput = document.getElementById('imageInput');
+      const imageCanvas = document.getElementById('imageCanvas');
+      const cropBox = document.getElementById('crop-box');
+      const ctx = imageCanvas.getContext('2d');
+      let image;
+      let offsetX, offsetY;
+      let isDragging = false;
+    
+      imageInput.addEventListener('change', handleImageUpload);
+    
+      function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image')) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            image = new Image();
+            image.src = e.target.result;
+            image.onload = function () {
+              drawImage();
+            };
+          };
+          reader.readAsDataURL(file);
+        }
+      }
+    
+      function drawImage() {
+        imageCanvas.width = image.width;
+        imageCanvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+      }
+    
+      function cropImage() {
+        const cropX = cropBox.offsetLeft;
+        const cropY = cropBox.offsetTop;
+        const cropWidth = cropBox.offsetWidth;
+        const cropHeight = cropBox.offsetHeight;
+    
+        const croppedImage = document.createElement('canvas');
+        const croppedCtx = croppedImage.getContext('2d');
+    
+        croppedImage.width = cropWidth;
+        croppedImage.height = cropHeight;
+    
+        croppedCtx.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+    
+        const downloadLink = document.createElement('a');
+        downloadLink.href = croppedImage.toDataURL('image/jpeg');
+        downloadLink.download = 'cropped_image.jpg';
+        downloadLink.click();
+      }
+    
+      function downloadCroppedImage() {
+        if (!image) {
+          alert('Please upload an image first.');
+          return;
+        }
+    
+        const downloadLink = document.createElement('a');
+        downloadLink.href = imageCanvas.toDataURL('image/jpeg');
+        downloadLink.download = 'cropped.jpg';
+        downloadLink.click();
+      }
+    
+      function changeCropBoxSize(change) {
+        const currentWidth = cropBox.offsetWidth;
+        const currentHeight = cropBox.offsetHeight;
+    
+        const newWidth = Math.max(50, currentWidth + change);
+        const newHeight = Math.max(50, currentHeight + change);
+    
+        cropBox.style.width = `${newWidth}px`;
+        cropBox.style.height = `${newHeight}px`;
+      }
+    
+      function startDragging(event) {
+        isDragging = true;
+        offsetX = event.clientX - cropBox.offsetLeft;
+        offsetY = event.clientY - cropBox.offsetTop;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDragging);
+      }
+    
+      function drag(event) {
+        if (isDragging) {
+          cropBox.style.left = (event.clientX - offsetX) + 'px';
+          cropBox.style.top = (event.clientY - offsetY) + 'px';
+        }
+      }
+    
+      function endDragging() {
+        isDragging = false;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', endDragging);
+      }
+    </script>
+  </body>
+</html>
